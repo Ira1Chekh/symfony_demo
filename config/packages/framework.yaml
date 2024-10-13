@@ -16,6 +16,12 @@ framework:
         handler_id: null
         cookie_secure: auto
         cookie_samesite: lax
+    
+    serializer:
+        default_context:
+            enable_max_depth: true
+            yaml_indentation: 2
+            circular_reference_limit: 2
 
     # When using the HTTP Cache, ESI allows to render page fragments separately
     # and with different cache configurations for each fragment

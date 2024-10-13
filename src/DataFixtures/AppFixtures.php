@@ -11,8 +11,10 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\Article;
 use App\Entity\Comment;
 use App\Entity\Post;
+use App\Entity\Review;
 use App\Entity\Tag;
 use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
@@ -35,6 +37,7 @@ final class AppFixtures extends Fixture
         $this->loadUsers($manager);
         $this->loadTags($manager);
         $this->loadPosts($manager);
+        $this->loadArticles($manager);
     }
 
     private function loadUsers(ObjectManager $manager): void
@@ -96,6 +99,36 @@ final class AppFixtures extends Fixture
         $manager->flush();
     }
 
+    private function loadArticles(ObjectManager $manager): void
+    {
+        foreach ($this->getPostData() as [$title, $slug, $summary, $content, $publishedAt, $author, $tags]) {
+            $article = new Article();
+            $article->setTitle($title);
+            $article->setSlug($slug);
+            $article->setSummary($summary);
+            $article->setContent($content);
+            $article->setPublishedAt($publishedAt);
+            $article->setAuthor($author);
+            $article->addTag(...$tags);
+
+            foreach (range(1, 5) as $i) {
+                /** @var User $reviewAuthor */
+                $reviewAuthor = $this->getReference('john_user');
+
+                $review = new Review();
+                $review->setAuthor($reviewAuthor);
+                $review->setContent($this->getRandomText(random_int(255, 512)));
+                $review->setPublishedAt(new \DateTimeImmutable('now + '.$i.'seconds'));
+
+                $article->addReview($review);
+            }
+
+            $manager->persist($article);
+        }
+
+        $manager->flush();
+    }
+
     /**
      * @return array<array{string, string, string, string, array<string>}>
      */
@@ -106,6 +139,7 @@ final class AppFixtures extends Fixture
             ['Jane Doe', 'jane_admin', 'kitten', 'jane_admin@symfony.com', [User::ROLE_ADMIN]],
             ['Tom Doe', 'tom_admin', 'kitten', 'tom_admin@symfony.com', [User::ROLE_ADMIN]],
             ['John Doe', 'john_user', 'kitten', 'john_user@symfony.com', [User::ROLE_USER]],
+            ['Jana Russel', 'jana_russel', 'kitten', 'jana_editor@symfony.com', [User::ROLE_EDITOR]],
         ];
     }
 
