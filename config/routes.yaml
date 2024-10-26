@@ -17,3 +17,6 @@ controllers:
     prefix: /{_locale}
     defaults:
         _locale: '%locale%'
+
+api_login_check:
+    path: /api/login_check

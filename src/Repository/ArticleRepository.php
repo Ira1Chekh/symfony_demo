@@ -46,25 +46,4 @@ class ArticleRepository extends ServiceEntityRepository
 
         return (new Paginator($qb))->paginate($page);
     }
-
-    public function findLatestNew(int $page = 1, ?Tag $tag = null): Paginator
-    {
-        $qb = $this->createQueryBuilder('a')
-            ->addSelect('u', 't')  // Fetch related entities
-            ->innerJoin('a.author', 'u')
-            ->leftJoin('a.tags', 't')
-            //->where('articles.publishedAt <= :now')
-            //->setParameter('now', new \DateTimeImmutable())
-            //->orderBy('a.publishedAt', 'DESC')
-        ;
-
-        // Add tag filter if a tag is provided
-        if (null !== $tag) {
-            $qb->andWhere(':tag MEMBER OF a.tags')
-               ->setParameter('tag', $tag);
-        }
-
-
-        return (new Paginator($qb))->paginate(1);
-    }
 }

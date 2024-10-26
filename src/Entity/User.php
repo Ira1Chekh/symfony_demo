@@ -43,12 +43,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
-    #[Groups(['article_list'])]
+    #[Groups(['article_list', 'article'])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::STRING)]
     #[Assert\NotBlank]
-    #[Groups(['article_list'])]
+    #[Groups(['article_list', 'article'])]
     private ?string $fullName = null;
 
     #[ORM\Column(type: Types::STRING, unique: true)]
