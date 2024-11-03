@@ -18,6 +18,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use App\DTO\ArticleDTO;
 use App\Transformer\ArticleTransformer;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/api/article')]
 #[IsGranted(User::ROLE_EDITOR)]
@@ -68,7 +69,8 @@ final class ArticleController extends AbstractController
     Request $request,
     EntityManagerInterface $entityManager,
     SerializerInterface $serializer,
-    ArticleTransformer $articleTransformer
+    ArticleTransformer $articleTransformer,
+    ValidatorInterface $validator
 ): JsonResponse {
        $requestData = $request->getContent();
 
@@ -78,6 +80,13 @@ final class ArticleController extends AbstractController
 
        // Transform DTO to Entity
        $article = $articleTransformer->transform($articleDTO);
+
+       // Validate the article, including UniqueEntity constraints
+        $errors = $validator->validate($article);
+        if (count($errors) > 0) {
+            $errorsString = (string) $errors;
+            return new JsonResponse(['errors' => $errorsString], 400);
+        }
 
        $entityManager->persist($article);
        $entityManager->flush();

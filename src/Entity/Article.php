@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Validator\NoLinksOrClickbait;
 use App\Repository\ArticleRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -34,6 +35,7 @@ class Article
     #[ORM\Column(type: Types::STRING)]
     #[Assert\NotBlank(message: 'article.blank_summary')]
     #[Assert\Length(max: 255)]
+    #[NoLinksOrClickbait]
     #[Groups(['article', 'article_list'])]
     private ?string $summary = null;
 

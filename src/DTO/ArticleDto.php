@@ -29,5 +29,5 @@ class ArticleDto
     public string $content;
 
     #[Groups(['article'])]
-    public User $author;
+    public ?User $author = null;
 }
