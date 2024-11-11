@@ -19,6 +19,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use App\DTO\ArticleDTO;
 use App\Transformer\ArticleTransformer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Attribute\Loggable;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 #[Route('/api/article')]
 #[IsGranted(User::ROLE_EDITOR)]
@@ -65,6 +68,7 @@ final class ArticleController extends AbstractController
     }
 
    #[Route('/', name: 'article_create', methods: ['POST'])]
+   #[Loggable('Creating article')]
    public function create(
     Request $request,
     EntityManagerInterface $entityManager,
@@ -97,30 +101,44 @@ final class ArticleController extends AbstractController
    }
 
    #[Route('/{id}', name: 'article_update', methods: ['PUT'])]
-   public function update(int $id, Request $request,  EntityManagerInterface $entityManager,
+   #[IsGranted('edit', 'article', 'Article not found', 404)]
+   #[Loggable('Updating article')]
+   public function update(Article $article, Request $request,  EntityManagerInterface $entityManager,
    SerializerInterface $serializer,
-   ArticleTransformer $articleTransformer): JsonResponse
+   ArticleTransformer $articleTransformer,
+   #[Autowire(service: 'monolog.logger.database')] LoggerInterface $articleLogger
+   ): JsonResponse
    {
-       // Fetch existing article
-       $article = $entityManager->getRepository(Article::class)->find($id);
+        if (!$article) {
+            return new JsonResponse(['error' => 'Article not found'], 404);
+        }
 
-       if (!$article) {
-           return new JsonResponse(['error' => 'Article not found'], 404);
-       }
+        try {
+            $requestData = $request->getContent();
 
-       $requestData = $request->getContent();
+            // Deserialize data to DTO
+            /** @var ArticleDTO $articleDTO */
+            $articleDTO = $serializer->deserialize($requestData, ArticleDTO::class, 'json', ['groups' => ['article']]);
+     
+            // Update the article using the transformer
+            $updatedArticle = $articleTransformer->transform($articleDTO, $article);
+            
+            // Persist updates
+            $entityManager->flush();
 
-       // Deserialize data to DTO
-       /** @var ArticleDTO $articleDTO */
-       $articleDTO = $serializer->deserialize($requestData, ArticleDTO::class, 'json', ['groups' => ['article']]);
-
-       // Update the article using the transformer
-       $updatedArticle = $articleTransformer->transform($articleDTO, $article);
-       
-       // Persist updates
-       $entityManager->flush();
-
-       $data = $serializer->serialize($updatedArticle, 'json', ['groups' => ['article']]);
+            // Log only after successful save
+            $articleLogger->info('Article updated successfully', [
+                'title' => $articleDTO->title,
+                'slug' => $articleDTO->slug,
+                'publishedAt' => $articleDTO->publishedAt->format('Y-m-d H:i:s'),
+                'tags' => $articleDTO->tags,
+                'summary' => $articleDTO->summary,
+            ]);
+     
+            $data = $serializer->serialize($updatedArticle, 'json', ['groups' => ['article']]);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => 'Failed to update article', 'details' => $e->getMessage()], 500);
+        }
 
        return new JsonResponse(['message' => 'Article updated!', 'article' => json_decode($data)], 200);
    }

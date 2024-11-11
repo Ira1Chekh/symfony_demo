@@ -22,11 +22,8 @@ class ArticleTransformer
 
     public function transform(ArticleDTO $articleDTO, Article $article = null): Article
     {
-        $isNewArticle = false;
-
         if ($article === null) {
             $article = new Article();
-            $isNewArticle = true;
         }
        
         $article->setTitle($articleDTO->title);
@@ -34,13 +31,10 @@ class ArticleTransformer
         $article->setSummary($articleDTO->summary);
         $article->setPublishedAt($articleDTO->publishedAt);
         $article->setContent($articleDTO->content);
-        
-        if ($isNewArticle) {
-            $user = $this->security->getUser();
+        $user = $this->security->getUser();
 
-            if ($user instanceof User) {  // Ensure user is of type User
-                $article->setAuthor($user);
-            }
+        if ($user instanceof User) {  // Ensure user is of type User
+            $article->setAuthor($user);
         }
 
         foreach ($articleDTO->tags as $tagData) {
